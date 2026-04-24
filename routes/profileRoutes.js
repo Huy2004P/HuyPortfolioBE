@@ -24,6 +24,9 @@ router.put('/', protect, async (req, res) => {
       profile.headline = req.body.headline || profile.headline;
       profile.subHeadline = req.body.subHeadline || profile.subHeadline;
       profile.techStack = req.body.techStack || profile.techStack;
+      if (req.body.avatarUrl !== undefined) {
+        profile.avatarUrl = req.body.avatarUrl;
+      }
       await profile.save();
     }
     res.json(profile);
