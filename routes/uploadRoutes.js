@@ -11,7 +11,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
+// Storage for images (Cloudinary)
+const imageStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'portfolio_image',
@@ -19,13 +20,38 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+// Storage for APK files (Cloudinary - raw resource type)
+const apkStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'portfolio_apk',
+    resource_type: 'raw',
+    allowed_formats: ['apk'],
+    use_filename: true,
+    unique_filename: true,
+  },
+});
 
-router.post('/', protect, upload.single('image'), (req, res) => {
+const uploadImage = multer({ storage: imageStorage });
+const uploadApk = multer({
+  storage: apkStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+});
+
+// POST /api/upload — upload image
+router.post('/', protect, uploadImage.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
   res.json({ imageUrl: req.file.path });
+});
+
+// POST /api/upload/apk — upload APK
+router.post('/apk', protect, uploadApk.single('apk'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No APK file uploaded' });
+  }
+  res.json({ apkUrl: req.file.path });
 });
 
 module.exports = router;
