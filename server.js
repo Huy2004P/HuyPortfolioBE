@@ -22,6 +22,32 @@ app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 
+// --- AUTO PING TO KEEP SERVER AWAKE ---
+app.get('/ping', (req, res) => {
+  res.status(200).send('Server is awake!');
+});
+
+const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
+function keepServerAwake() {
+  // Use SERVER_URL from .env if available, otherwise fallback to localhost (for testing)
+  const url = process.env.SERVER_URL || `http://localhost:${PORT}/ping`;
+  const httpModule = url.startsWith('https') ? require('https') : require('http');
+  
+  httpModule.get(url, (res) => {
+    if (res.statusCode === 200) {
+      console.log(`[${new Date().toISOString()}] Keep-alive ping successful.`);
+    } else {
+      console.log(`[${new Date().toISOString()}] Keep-alive ping failed with status code: ${res.statusCode}`);
+    }
+  }).on('error', (err) => {
+    console.error(`[${new Date().toISOString()}] Keep-alive ping error:`, err.message);
+  });
+}
+
+// Start the ping interval
+setInterval(keepServerAwake, PING_INTERVAL);
+// --------------------------------------
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
