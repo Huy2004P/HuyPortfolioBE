@@ -4,8 +4,23 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/authMiddleware');
+const validate = require('../middleware/validate');
+const {
+  loginSchema,
+  setupSchema,
+  changePasswordSchema,
+  forgotPasswordSchema
+} = require('../middleware/schemas');
+const rateLimit = require('express-rate-limit');
 
-router.post('/login', async (req, res) => {
+// Strict rate limiter for login and password reset (15 requests per 15 minutes)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { message: 'Too many attempts, please try again after 15 minutes' }
+});
+
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ username });
@@ -34,7 +49,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Setup initial admin user if not exists
-router.post('/setup', async (req, res) => {
+router.post('/setup', validate(setupSchema), async (req, res) => {
   const { username, password } = req.body;
   const userExists = await User.findOne({ username });
   if (userExists) {
@@ -53,7 +68,7 @@ router.post('/setup', async (req, res) => {
 });
 
 // Change Password (logged in)
-router.put('/change-password', protect, async (req, res) => {
+router.put('/change-password', protect, validate(changePasswordSchema), async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   try {
     const user = await User.findById(req.user.id);
@@ -72,7 +87,7 @@ router.put('/change-password', protect, async (req, res) => {
 });
 
 // Forgot Password (not logged in)
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), async (req, res) => {
   const { username, newPassword } = req.body;
   try {
     const user = await User.findOne({ username });
