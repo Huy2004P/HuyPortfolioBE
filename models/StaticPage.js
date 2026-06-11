@@ -8,10 +8,8 @@ const staticPageSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-// Update updatedAt field before saving
-staticPageSchema.pre('save', function(next) {
+staticPageSchema.pre('save', function() {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('StaticPage', staticPageSchema);

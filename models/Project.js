@@ -27,16 +27,22 @@ const projectSchema = new mongoose.Schema({
 });
 
 projectSchema.pre('save', async function() {
+  const oldDoc = this.isNew ? null : await this.constructor.findById(this._id);
+  const oldTitle = oldDoc ? oldDoc.title : null;
+  const oldDescription = oldDoc ? oldDoc.description : null;
+  const oldChangelog = oldDoc ? oldDoc.changelog : null;
+
   if (this.isModified('title')) {
-    this.title = await translateMap(this.title);
+    this.title = await translateMap(this.title, oldTitle);
   }
   if (this.isModified('description')) {
-    this.description = await translateMap(this.description);
+    this.description = await translateMap(this.description, oldDescription);
   }
   if (this.isModified('changelog')) {
     for (let i = 0; i < this.changelog.length; i++) {
       if (this.changelog[i].notes) {
-        this.changelog[i].notes = await translateMap(this.changelog[i].notes);
+        const oldNotes = oldChangelog && oldChangelog[i] ? oldChangelog[i].notes : null;
+        this.changelog[i].notes = await translateMap(this.changelog[i].notes, oldNotes);
       }
     }
   }

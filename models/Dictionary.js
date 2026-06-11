@@ -9,8 +9,11 @@ const dictionarySchema = new mongoose.Schema({
 });
 
 dictionarySchema.pre('save', async function() {
+  const oldDoc = this.isNew ? null : await this.constructor.findById(this._id);
+  const oldTranslations = oldDoc ? oldDoc.translations : null;
+
   if (this.isModified('translations')) {
-    this.translations = await translateMap(this.translations);
+    this.translations = await translateMap(this.translations, oldTranslations);
   }
 });
 

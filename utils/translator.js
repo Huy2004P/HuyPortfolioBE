@@ -47,19 +47,33 @@ async function translateText(text, targetLang) {
  * Input: e.g. { vi: 'Xin chào', en: '', ja: '', ko: '', zh: '' }
  * Output: same object with empty translations populated.
  */
-async function translateMap(map) {
+async function translateMap(map, oldMap) {
   if (!map) return map;
 
-  // If it's a Mongoose Map
-  if (typeof map.get === 'function' && typeof map.set === 'function') {
-    const viText = map.get('vi');
-    if (!viText || viText.trim() === '') {
-      return map;
-    }
-    const languages = ['en', 'ja', 'ko', 'zh'];
+  const isMongooseMap = typeof map.get === 'function' && typeof map.set === 'function';
+  const getVal = (m, key) => (isMongooseMap ? m.get(key) : m[key]);
+  const setVal = (m, key, val) => (isMongooseMap ? m.set(key, val) : (m[key] = val));
+
+  const viText = getVal(map, 'vi');
+  if (!viText || viText.trim() === '') {
+    return map;
+  }
+
+  const oldViText = oldMap ? getVal(oldMap, 'vi') : null;
+  const viTextChanged = oldViText !== viText;
+
+  const languages = ['en', 'ja', 'ko', 'zh'];
+  
+  if (isMongooseMap) {
     for (const lang of languages) {
       const val = map.get(lang);
-      if (!val || val.trim() === '' || val === viText) {
+      const oldVal = oldMap ? oldMap.get(lang) : null;
+
+      const isEmpty = !val || val.trim() === '';
+      const isUntranslated = val === viText;
+      const isOldTranslationUnchanged = viTextChanged && oldVal !== null && val === oldVal;
+
+      if (isEmpty || isUntranslated || isOldTranslationUnchanged) {
         try {
           const translated = await translateText(viText, lang);
           map.set(lang, translated);
@@ -73,16 +87,17 @@ async function translateMap(map) {
   }
 
   // If it's a plain object
-  const viText = map.vi;
-  if (!viText || viText.trim() === '') {
-    return map;
-  }
-  const languages = ['en', 'ja', 'ko', 'zh'];
   const result = { ...map };
   result.vi = viText;
   for (const lang of languages) {
     const val = result[lang];
-    if (!val || val.trim() === '' || val === viText) {
+    const oldVal = oldMap ? oldMap[lang] : null;
+
+    const isEmpty = !val || val.trim() === '';
+    const isUntranslated = val === viText;
+    const isOldTranslationUnchanged = viTextChanged && oldVal !== null && val === oldVal;
+
+    if (isEmpty || isUntranslated || isOldTranslationUnchanged) {
       try {
         result[lang] = await translateText(viText, lang);
       } catch (err) {

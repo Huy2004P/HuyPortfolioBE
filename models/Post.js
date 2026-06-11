@@ -15,14 +15,19 @@ const postSchema = new mongoose.Schema({
 });
 
 postSchema.pre('save', async function() {
+  const oldDoc = this.isNew ? null : await this.constructor.findById(this._id);
+  const oldTitle = oldDoc ? oldDoc.title : null;
+  const oldContent = oldDoc ? oldDoc.content : null;
+  const oldExcerpt = oldDoc ? oldDoc.excerpt : null;
+
   if (this.isModified('title')) {
-    this.title = await translateMap(this.title);
+    this.title = await translateMap(this.title, oldTitle);
   }
   if (this.isModified('content')) {
-    this.content = await translateMap(this.content);
+    this.content = await translateMap(this.content, oldContent);
   }
   if (this.isModified('excerpt')) {
-    this.excerpt = await translateMap(this.excerpt);
+    this.excerpt = await translateMap(this.excerpt, oldExcerpt);
   }
 });
 

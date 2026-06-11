@@ -25,11 +25,15 @@ const profileSchema = new mongoose.Schema({
 });
 
 profileSchema.pre('save', async function() {
+  const oldDoc = this.isNew ? null : await this.constructor.findById(this._id);
+  const oldHeadline = oldDoc ? oldDoc.headline : null;
+  const oldSubHeadline = oldDoc ? oldDoc.subHeadline : null;
+
   if (this.isModified('headline')) {
-    this.headline = await translateMap(this.headline);
+    this.headline = await translateMap(this.headline, oldHeadline);
   }
   if (this.isModified('subHeadline')) {
-    this.subHeadline = await translateMap(this.subHeadline);
+    this.subHeadline = await translateMap(this.subHeadline, oldSubHeadline);
   }
 });
 

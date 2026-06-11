@@ -94,7 +94,7 @@ const profileSchema = Joi.object({
   subHeadline: localizedField.optional(),
   techStack: Joi.array().items(Joi.string()).optional(),
   avatarUrl: Joi.string().uri().allow('').optional(),
-  socialLinks: Joi.object().pattern(Joi.string(), Joi.string().uri().allow('')).optional()
+  socialLinks: Joi.object().pattern(Joi.string(), Joi.string().allow('')).optional()
 });
 
 // Score Schema
@@ -131,8 +131,7 @@ const commentSchema = Joi.object({
   playerName: Joi.string().required().trim().messages({
     'any.required': 'Player name is required'
   }),
-  email: Joi.string().email().required().messages({
-    'any.required': 'Email is required',
+  email: Joi.string().email().allow('').optional().messages({
     'string.email': 'Email must be a valid email address'
   }),
   content: Joi.string().required().messages({
