@@ -112,7 +112,7 @@ const csrfCheck = (req, res, next) => {
     const referer = req.headers.referer;
     const allowedOrigins = process.env.ALLOWED_ORIGINS 
       ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) 
-      : ['http://localhost:5173', 'http://localhost:3000'];
+      : ['http://localhost:5173', 'http://localhost:3000', 'https://portfolio.vanhuy2004h.io.vn'];
 
     if (origin) {
       const cleanOrigin = origin.replace(/\/$/, '');

@@ -25,7 +25,7 @@ app.use(helmet());
 // Enable Cross-Origin Resource Sharing with dynamic whitelisted origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) 
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'https://portfolio.vanhuy2004h.io.vn'];
 
 app.use(cors({
   origin: (origin, callback) => {
