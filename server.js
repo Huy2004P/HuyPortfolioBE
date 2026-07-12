@@ -4,6 +4,16 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const {
+  authLimiter,
+  contactLimiter,
+  commentLimiter,
+  mongoSanitize,
+  firewall,
+  ipWhitelist,
+  csrfCheck,
+  xssSanitize
+} = require('./middleware/security');
 
 dotenv.config();
 
@@ -12,11 +22,34 @@ const app = express();
 // Set security HTTP headers
 app.use(helmet());
 
-// Enable Cross-Origin Resource Sharing
-app.use(cors());
+// Enable Cross-Origin Resource Sharing with dynamic whitelisted origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) 
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some(o => o.replace(/\/$/, '') === cleanOrigin);
+    if (isAllowed || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 
 // Parse incoming request body as JSON
 app.use(express.json());
+
+// Global Input Protection & Sanitization Suite
+app.use(mongoSanitize);
+app.use(firewall);
+app.use(csrfCheck);
+app.use(xssSanitize);
 
 // Global Rate Limiting (Limit each IP to 100 requests per 15 minutes in production, 10000 in dev)
 const globalLimiter = rateLimit({
@@ -34,7 +67,7 @@ mongoose.connect(MONGO_URI)
   .catch(err => console.log(err));
 
 // API Routes registration
-app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
@@ -42,10 +75,10 @@ app.use('/api/pages', require('./routes/pageRoutes'));
 app.use('/api/scores', require('./routes/scoreRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/dictionary', require('./routes/dictionaryRoutes'));
-app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/contact', contactLimiter, require('./routes/contactRoutes'));
 app.use('/api/subscriber', require('./routes/subscriberRoutes'));
-app.use('/api/comments', require('./routes/commentRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/comments', commentLimiter, require('./routes/commentRoutes'));
+app.use('/api/admin', ipWhitelist, require('./routes/adminRoutes'));
 
 // --- AUTO PING TO KEEP SERVER AWAKE ---
 app.get('/ping', (req, res) => {
