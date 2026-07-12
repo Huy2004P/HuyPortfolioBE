@@ -18,10 +18,10 @@ app.use(cors());
 // Parse incoming request body as JSON
 app.use(express.json());
 
-// Global Rate Limiting (Limit each IP to 100 requests per 15 minutes)
+// Global Rate Limiting (Limit each IP to 100 requests per 15 minutes in production, 10000 in dev)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000,
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 app.use('/api/', globalLimiter);

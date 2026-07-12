@@ -10,8 +10,20 @@ const StaticPage = require('../models/StaticPage');
 mongoose.connect(MONGO_URI)
   .then(async () => {
     console.log('MongoDB connected');
-    const page = await StaticPage.findOne({ key: 'graduation' });
-    console.log('Graduation Page Document:', JSON.stringify(page, null, 2));
+    let page = await StaticPage.findOne({ key: 'graduation' });
+    if (page) {
+      page.navTitle = {
+        vi: "Tốt Nghiệp 🎓",
+        en: "Graduation 🎓"
+      };
+      await page.save();
+      console.log('Updated page successfully!');
+      
+      const updatedPage = await StaticPage.findOne({ key: 'graduation' });
+      console.log('Updated Page Document:', JSON.stringify(updatedPage, null, 2));
+    } else {
+      console.log('Page not found');
+    }
     mongoose.disconnect();
   })
   .catch(err => {
